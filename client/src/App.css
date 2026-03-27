@@ -1,0 +1,36 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.app-header {
+  padding: 1rem;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.app-header p {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+}
+
+.app-footer {
+  border-top: 1px solid var(--color-border);
+  padding: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .app {
+    max-width: 100%;
+  }
+}

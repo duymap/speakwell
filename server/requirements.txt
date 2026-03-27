@@ -1,0 +1,5 @@
+pipecat-ai[smallwebrtc,openai,silero]
+fastapi
+uvicorn
+aiohttp
+numpy

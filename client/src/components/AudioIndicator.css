@@ -1,0 +1,104 @@
+.audio-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+}
+
+.indicator-visual {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-border);
+  position: relative;
+}
+
+.audio-indicator-idle .circle {
+  background: var(--color-border);
+}
+
+.audio-indicator-listening .circle {
+  background: var(--color-primary);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.audio-indicator-userSpeaking .circle {
+  background: #4caf50;
+}
+
+.ripple {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #4caf50;
+  animation: ripple 1.5s ease-out infinite;
+}
+
+.ripple-2 {
+  animation-delay: 0.5s;
+}
+
+.bars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+}
+
+.bar {
+  width: 6px;
+  height: 8px;
+  background: #7b1fa2;
+  border-radius: 3px;
+  animation: oscillate 0.8s ease-in-out infinite;
+}
+
+.indicator-label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.7; }
+}
+
+@keyframes ripple {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes oscillate {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(3); }
+}
+
+@media (max-width: 480px) {
+  .indicator-visual {
+    width: 48px;
+    height: 48px;
+  }
+
+  .circle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .ripple {
+    width: 36px;
+    height: 36px;
+  }
+}
