@@ -59,6 +59,10 @@ class Qwen3TTSService(TTSService):
                 source_sample_rate = int(
                     resp.headers.get("X-Sample-Rate", "12000")
                 )
+                logger.info(
+                    f"TTS response: {len(audio_bytes)} bytes, "
+                    f"source_sr={source_sample_rate}, target_sr={self._output_sample_rate}"
+                )
 
                 if source_sample_rate != self._output_sample_rate:
                     audio_bytes = self._resample(
