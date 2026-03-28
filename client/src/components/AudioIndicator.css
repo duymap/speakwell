@@ -19,21 +19,28 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--color-border);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   position: relative;
+  transition: all 0.3s ease;
 }
 
 .audio-indicator-idle .circle {
-  background: var(--color-border);
+  background: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 .audio-indicator-listening .circle {
-  background: var(--color-primary);
+  background: var(--gradient-accent);
+  border-color: transparent;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
   animation: pulse 2s ease-in-out infinite;
 }
 
 .audio-indicator-userSpeaking .circle {
-  background: #4caf50;
+  background: var(--color-success);
+  border-color: transparent;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
 }
 
 .ripple {
@@ -43,7 +50,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 2px solid #4caf50;
+  border: 2px solid var(--color-success);
   animation: ripple 1.5s ease-out infinite;
 }
 
@@ -61,23 +68,24 @@
 .bar {
   width: 6px;
   height: 8px;
-  background: #7b1fa2;
+  background: var(--gradient-accent);
   border-radius: 3px;
   animation: oscillate 0.8s ease-in-out infinite;
 }
 
 .indicator-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 @keyframes pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.15); opacity: 0.7; }
+  50% { transform: scale(1.12); opacity: 0.75; }
 }
 
 @keyframes ripple {
-  0% { transform: scale(1); opacity: 0.6; }
+  0% { transform: scale(1); opacity: 0.5; }
   100% { transform: scale(2); opacity: 0; }
 }
 

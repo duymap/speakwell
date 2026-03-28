@@ -24,7 +24,10 @@ function App() {
       <PipecatClientAudio />
       <main className="app">
         <header className="app-header">
-          <h1>SpeakWell</h1>
+          <div className="app-header-brand">
+            <div className="app-header-icon">🎙</div>
+            <h1>Speak<span>Well</span></h1>
+          </div>
           <p>Practice English with AI</p>
         </header>
         <ChatInterface />
