@@ -113,6 +113,9 @@ def _generate_audio(text: str, language: str, instruct: str):
 
     audio = mm_output["audio"]
     sr = mm_output["sr"]
+    # sr may be a torch tensor, convert to plain int
+    if isinstance(sr, torch.Tensor):
+        sr = sr.item()
 
     logger.info("audio type=%s, sr=%s", type(audio).__name__,  sr)
 
