@@ -7,6 +7,7 @@ Pipecat pipeline server can send base64-encoded audio and receive
 transcribed text in the standard chat-completions response format.
 """
 
+import asyncio
 import base64
 import io
 import logging
@@ -30,6 +31,7 @@ HOST = "0.0.0.0"
 PORT = 8001
 
 model = None
+_inference_lock = asyncio.Lock()
 
 
 @asynccontextmanager
@@ -40,11 +42,9 @@ async def lifespan(app: FastAPI):
     logger.info("Loading STT model %s with vLLM backend ...", MODEL_ID)
     model = Qwen3ASRModel.LLM(
         model=MODEL_ID,
-        gpu_memory_utilization=0.15,
-        max_inference_batch_size=32,
-        max_new_tokens=4096,
+        gpu_memory_utilization=0.9,
+        max_new_tokens=32,
         max_model_len=4096,
-        mm_encoder_attn_backend="TORCH_SDPA",
         enforce_eager=True,
     )
     logger.info("STT model loaded.")
@@ -123,12 +123,13 @@ async def chat_completions(request: dict):
         if audio_data is None:
             raise HTTPException(400, "No audio data found in request")
 
-        # Write to temp file for the model
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp:
-            tmp.write(audio_data)
-            tmp.flush()
+        # Write to temp file for the model (lock to prevent concurrent vLLM access)
+        async with _inference_lock:
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp:
+                tmp.write(audio_data)
+                tmp.flush()
 
-            results = model.transcribe(audio=tmp.name, language=None)
+                results = model.transcribe(audio=tmp.name, language=None)
 
         # Format as "<|language_code|>transcribed text" to match vLLM ASR output
         lang = results[0].language or ""
@@ -187,15 +188,16 @@ async def transcribe(
         raise HTTPException(503, "Model not loaded yet")
 
     suffix = Path(file.filename or "audio.wav").suffix
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
-        content = await file.read()
-        tmp.write(content)
-        tmp.flush()
+    async with _inference_lock:
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
+            content = await file.read()
+            tmp.write(content)
+            tmp.flush()
 
-        results = model.transcribe(
-            audio=tmp.name,
-            language=language,
-        )
+            results = model.transcribe(
+                audio=tmp.name,
+                language=language,
+            )
 
     return TranscriptionResponse(
         text=results[0].text,
@@ -223,10 +225,11 @@ async def transcribe_batch(
             tmp_paths.append(tmp.name)
             tmp_files.append(tmp)
 
-        results = model.transcribe(
-            audio=tmp_paths,
-            language=language,
-        )
+        async with _inference_lock:
+            results = model.transcribe(
+                audio=tmp_paths,
+                language=language,
+            )
     finally:
         for tmp in tmp_files:
             tmp.close()
