@@ -3,3 +3,4 @@ fastapi
 uvicorn
 aiohttp
 numpy
+python-dotenv
