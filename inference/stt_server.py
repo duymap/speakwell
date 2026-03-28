@@ -40,9 +40,12 @@ async def lifespan(app: FastAPI):
     logger.info("Loading STT model %s with vLLM backend ...", MODEL_ID)
     model = Qwen3ASRModel.LLM(
         model=MODEL_ID,
-        gpu_memory_utilization=0.4,
+        gpu_memory_utilization=0.15,
         max_inference_batch_size=32,
         max_new_tokens=4096,
+        max_model_len=4096,
+        mm_encoder_attn_backend="TORCH_SDPA",
+        enforce_eager=True,
     )
     logger.info("STT model loaded.")
     yield

@@ -1,9 +1,10 @@
 """
-SpeakWell TTS Server — Qwen3-TTS-12Hz-1.7B-VoiceDesign (transformers backend)
+SpeakWell TTS Server — Qwen3-TTS with vLLM-Omni backend
 Runs on port 8002
 
-Exposes a /tts endpoint returning raw PCM audio with an X-Sample-Rate header,
-matching what the Pipecat pipeline server (qwen3_tts.py) expects.
+Uses vllm-omni's Omni engine for efficient GPU inference with
+continuous batching and PagedAttention. Exposes the same /tts endpoint
+returning raw PCM audio with an X-Sample-Rate header.
 """
 
 import io
@@ -29,23 +30,37 @@ PORT = 8002
 # Default voice design instruction for the VoiceDesign model
 DEFAULT_INSTRUCT = "A warm, friendly voice with a natural and clear tone."
 
-model = None
+engine = None
+
+
+def _estimate_token_length(text: str, language: str = "English") -> int:
+    """Estimate the number of prompt tokens needed for a TTS request.
+
+    The Qwen3-TTS tokenizer operates at 12Hz (12 tokens per second of audio).
+    We estimate ~150ms per word for English and ~200ms per character for CJK.
+    """
+    if language in ("Chinese", "Japanese", "Korean"):
+        estimated_seconds = len(text) * 0.2
+    else:
+        estimated_seconds = len(text.split()) * 0.15
+    # Minimum 1 second, add 20% buffer
+    estimated_seconds = max(1.0, estimated_seconds * 1.2)
+    return max(1, int(estimated_seconds * 12))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model
-    from qwen_tts import Qwen3TTSModel
+    global engine
+    from vllm_omni import Omni
 
-    logger.info("Loading TTS model %s ...", MODEL_ID)
-    model = Qwen3TTSModel.from_pretrained(
-        MODEL_ID,
-        device_map="cuda:0",
-        dtype=torch.bfloat16,
+    logger.info("Loading TTS model %s with vLLM-Omni engine ...", MODEL_ID)
+    engine = Omni(
+        model=MODEL_ID,
+        log_stats=False,
     )
-    logger.info("TTS model loaded.")
+    logger.info("TTS model loaded with vLLM-Omni.")
     yield
-    model = None
+    engine = None
 
 
 app = FastAPI(title="SpeakWell TTS", lifespan=lifespan)
@@ -73,6 +88,35 @@ SPEAKER_VOICES = {
 }
 
 
+def _generate_audio(text: str, language: str, instruct: str):
+    """Run TTS inference through vLLM-Omni engine. Returns (audio_np, sample_rate)."""
+    token_len = _estimate_token_length(text, language)
+    inputs = {
+        "prompt_token_ids": [0] * token_len,
+        "additional_information": {
+            "text": [text],
+            "language": [language],
+            "instruct": [instruct],
+        },
+    }
+
+    results = engine.generate(inputs)
+
+    # Extract audio from multimodal output
+    stage_output = results[0]
+    mm_output = stage_output.request_output.outputs[0].multimodal_output
+    audio = mm_output["audio"]
+    sr = mm_output["sr"]
+
+    # Convert to numpy if it's a torch tensor
+    if isinstance(audio, torch.Tensor):
+        audio = audio.cpu().numpy()
+    elif isinstance(audio, list):
+        audio = torch.cat(audio).cpu().numpy() if isinstance(audio[0], torch.Tensor) else np.array(audio)
+
+    return audio, sr
+
+
 # ---------------------------------------------------------------------------
 # Pipeline-compatible endpoint (used by Pipecat qwen3_tts.py)
 # ---------------------------------------------------------------------------
@@ -90,7 +134,7 @@ async def tts_pipeline(req: PipelineTTSRequest):
     Accepts: {"text": "...", "language": "English", "speaker": "Ryan"}
     Returns: Raw 16-bit PCM audio bytes with X-Sample-Rate header.
     """
-    if model is None:
+    if engine is None:
         raise HTTPException(503, "Model not loaded yet")
 
     if not req.text or not req.text.strip():
@@ -99,16 +143,10 @@ async def tts_pipeline(req: PipelineTTSRequest):
     instruct = SPEAKER_VOICES.get(req.speaker, DEFAULT_INSTRUCT)
     language = req.language if req.language in SUPPORTED_LANGUAGES else "English"
 
-    wavs, sr = model.generate_voice_design(
-        text=req.text,
-        language=language,
-        instruct=instruct,
-    )
+    audio, sr = _generate_audio(req.text, language, instruct)
 
     # Convert float audio to 16-bit PCM bytes
-    audio = wavs[0]
     if audio.dtype != np.int16:
-        # Normalize float audio to int16 range
         if np.issubdtype(audio.dtype, np.floating):
             audio = np.clip(audio, -1.0, 1.0)
             audio = (audio * 32767).astype(np.int16)
@@ -141,7 +179,7 @@ class BatchSynthesisRequest(BaseModel):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "model": MODEL_ID}
+    return {"status": "ok", "model": MODEL_ID, "backend": "vllm-omni"}
 
 
 @app.get("/v1/voices/languages")
@@ -152,7 +190,7 @@ async def list_languages():
 @app.post("/v1/synthesize")
 async def synthesize(req: SynthesisRequest):
     """Synthesize speech from text. Returns audio as wav/mp3 binary."""
-    if model is None:
+    if engine is None:
         raise HTTPException(503, "Model not loaded yet")
 
     if req.language not in SUPPORTED_LANGUAGES:
@@ -161,18 +199,14 @@ async def synthesize(req: SynthesisRequest):
             f"Unsupported language '{req.language}'. Must be one of: {SUPPORTED_LANGUAGES}",
         )
 
-    wavs, sr = model.generate_voice_design(
-        text=req.text,
-        language=req.language,
-        instruct=req.instruct,
-    )
+    audio, sr = _generate_audio(req.text, req.language, req.instruct)
 
     buf = io.BytesIO()
     audio_format = req.format.lower()
     if audio_format not in ("wav", "mp3"):
         audio_format = "wav"
 
-    sf.write(buf, wavs[0], sr, format=audio_format.upper())
+    sf.write(buf, audio, sr, format=audio_format.upper())
     buf.seek(0)
 
     media_type = "audio/wav" if audio_format == "wav" else "audio/mpeg"
@@ -188,25 +222,16 @@ async def synthesize_batch(req: BatchSynthesisRequest):
     """Synthesize multiple texts in a batch. Returns a zip of audio files."""
     import zipfile
 
-    if model is None:
+    if engine is None:
         raise HTTPException(503, "Model not loaded yet")
-
-    texts = [item.text for item in req.items]
-    languages = [item.language for item in req.items]
-    instructs = [item.instruct for item in req.items]
-
-    wavs, sr = model.generate_voice_design(
-        text=texts,
-        language=languages,
-        instruct=instructs,
-    )
 
     zip_buf = io.BytesIO()
     with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for i, wav in enumerate(wavs):
+        for i, item in enumerate(req.items):
+            audio, sr = _generate_audio(item.text, item.language, item.instruct)
             audio_buf = io.BytesIO()
-            fmt = req.items[i].format.lower() if req.items[i].format.lower() in ("wav", "mp3") else "wav"
-            sf.write(audio_buf, wav, sr, format=fmt.upper())
+            fmt = item.format.lower() if item.format.lower() in ("wav", "mp3") else "wav"
+            sf.write(audio_buf, audio, sr, format=fmt.upper())
             audio_buf.seek(0)
             zf.writestr(f"speech_{i}.{fmt}", audio_buf.read())
 

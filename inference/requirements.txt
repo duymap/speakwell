@@ -4,15 +4,14 @@ uvicorn[standard]>=0.32.0
 python-multipart>=0.0.12
 
 # STT - Qwen3-ASR with vLLM backend
-qwen-asr[vllm]>=0.1.0
+qwen-asr[vllm]>=0.0.1
 
-# TTS - Qwen3-TTS (transformers backend; vLLM serving not yet supported)
-qwen-tts>=0.1.0
+# TTS - Qwen3-TTS with vLLM-Omni engine (offline inference)
+vllm-omni==0.14.0
 
 # GPU acceleration
 torch>=2.4.0
 torchaudio>=2.4.0
-flash-attn>=2.6.0
 
 # Audio I/O
 soundfile>=0.12.0
