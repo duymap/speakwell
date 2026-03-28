@@ -108,14 +108,21 @@ def _generate_audio(text: str, language: str, instruct: str):
     stage_output = results[0]
     req_output = stage_output.request_output[0]
     mm_output = req_output.multimodal_output
+    logger.info("multimodal_output type=%s, keys=%s", type(mm_output).__name__,
+                list(mm_output.keys()) if isinstance(mm_output, dict) else repr(mm_output)[:200])
+
     audio = mm_output["audio"]
     sr = mm_output["sr"]
+
+    logger.info("audio type=%s, sr=%s", type(audio).__name__,  sr)
 
     # Convert to numpy if it's a torch tensor
     if isinstance(audio, torch.Tensor):
         audio = audio.cpu().numpy()
     elif isinstance(audio, list):
         audio = torch.cat(audio).cpu().numpy() if isinstance(audio[0], torch.Tensor) else np.array(audio)
+
+    logger.info("audio shape=%s, dtype=%s, len_bytes=%d", audio.shape, audio.dtype, audio.nbytes)
 
     return audio, sr
 
