@@ -1,4 +1,4 @@
-pipecat-ai[smallwebrtc,openai,silero]
+pipecat-ai[smallwebrtc,openai,silero,webrtc]
 fastapi
 uvicorn
 aiohttp

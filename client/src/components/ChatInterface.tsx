@@ -72,7 +72,7 @@ export function ChatInterface() {
     setErrorKind(null);
     try {
       await client.connect({
-        webrtcRequestParams: { endpoint: "/api/offer" },
+        webrtcRequestParams: { endpoint: `${import.meta.env.VITE_API_BASE_URL}/api/offer` },
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "NotAllowedError") {

@@ -6,6 +6,7 @@ load_dotenv()
 
 import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from pipecat.audio.vad.silero import SileroVADAnalyzer
@@ -17,6 +18,12 @@ from pipecat.services.openai.llm import OpenAILLMContext, OpenAILLMService
 from pipecat.transports.base_transport import TransportParams
 from pipecat.transports.smallwebrtc.connection import SmallWebRTCConnection
 from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
+from pipecat.transports.smallwebrtc.request_handler import (
+    IceCandidate,
+    SmallWebRTCPatchRequest,
+    SmallWebRTCRequest,
+    SmallWebRTCRequestHandler,
+)
 
 from services.qwen3_stt import Qwen3STTService
 from services.qwen3_tts import Qwen3TTSService
@@ -30,16 +37,39 @@ TTS_SPEAKER = os.getenv("TTS_SPEAKER", "Ryan")
 PORT = int(os.getenv("PORT", "7860"))
 
 app = FastAPI(title="SpeakWell Pipeline Server")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+request_handler = SmallWebRTCRequestHandler()
 
 
 @app.post("/api/offer")
 async def offer(request: Request):
     body = await request.json()
-    connection = SmallWebRTCConnection()
-    await connection.initialize(body.get("sdp", ""), body.get("type", "offer"))
-    task = asyncio.create_task(run_bot(connection))
-    answer = connection.get_answer()
+    webrtc_request = SmallWebRTCRequest.from_dict(body)
+
+    async def on_connection(connection: SmallWebRTCConnection):
+        asyncio.create_task(run_bot(connection))
+
+    answer = await request_handler.handle_web_request(webrtc_request, on_connection)
     return JSONResponse(content=answer)
+
+
+@app.patch("/api/offer")
+async def offer_patch(request: Request):
+    body = await request.json()
+    candidates = [
+        IceCandidate(
+            candidate=c["candidate"],
+            sdp_mid=c.get("sdpMid", ""),
+            sdp_mline_index=c.get("sdpMLineIndex", 0),
+        )
+        for c in body.get("candidates", [])
+    ]
+    patch_request = SmallWebRTCPatchRequest(
+        pc_id=body["pc_id"],
+        candidates=candidates,
+    )
+    await request_handler.handle_patch_request(patch_request)
+    return JSONResponse(content={"status": "ok"})
 
 
 @app.get("/api/health")
@@ -48,6 +78,16 @@ async def health():
 
 
 async def run_bot(connection: SmallWebRTCConnection):
+    import logging
+    logger = logging.getLogger("run_bot")
+    logger.info("run_bot started")
+    try:
+        await _run_bot(connection)
+    except Exception as e:
+        logger.exception(f"run_bot crashed: {e}")
+
+
+async def _run_bot(connection: SmallWebRTCConnection):
     transport = SmallWebRTCTransport(
         webrtc_connection=connection,
         params=TransportParams(
@@ -82,7 +122,7 @@ async def run_bot(connection: SmallWebRTCConnection):
 
     task = PipelineTask(
         pipeline,
-        PipelineParams(allow_interruptions=True),
+        params=PipelineParams(allow_interruptions=True),
     )
 
     @transport.event_handler("on_client_connected")

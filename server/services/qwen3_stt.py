@@ -8,10 +8,10 @@ import aiohttp
 from loguru import logger
 
 from pipecat.frames.frames import Frame, TranscriptionFrame
-from pipecat.services.stt_service import STTService
+from pipecat.services.stt_service import SegmentedSTTService
 
 
-class Qwen3STTService(STTService):
+class Qwen3STTService(SegmentedSTTService):
     """STT service that calls a Qwen3-ASR vLLM server (OpenAI-compatible API)."""
 
     def __init__(
@@ -37,10 +37,11 @@ class Qwen3STTService(STTService):
         await super().stop(frame)
 
     async def run_stt(self, audio: bytes) -> AsyncGenerator[Frame, None]:
+        """audio is WAV bytes from SegmentedSTTService (buffered full utterance)."""
         if not audio:
             return
 
-        audio_b64 = self._pcm_to_wav_base64(audio)
+        audio_b64 = base64.b64encode(audio).decode()
 
         payload = {
             "model": self._model,
