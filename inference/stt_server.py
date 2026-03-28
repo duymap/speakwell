@@ -135,7 +135,7 @@ async def chat_completions(request: dict):
                 tmp.write(audio_data)
                 tmp.flush()
 
-                results = model.transcribe(audio=tmp.name, language="en")
+                results = model.transcribe(audio=tmp.name, language="English")
 
         # Format as "<|language_code|>transcribed text" to match vLLM ASR output
         lang = results[0].language or ""
