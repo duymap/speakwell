@@ -1,11 +1,18 @@
 """
 SpeakWell STT Server — Qwen3-ASR-1.7B with vLLM backend
 Runs on port 8001
+
+Exposes an OpenAI-compatible /v1/chat/completions endpoint so the
+Pipecat pipeline server can send base64-encoded audio and receive
+transcribed text in the standard chat-completions response format.
 """
 
+import base64
 import io
 import logging
 import tempfile
+import time
+import wave
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -53,6 +60,10 @@ app.add_middleware(
 )
 
 
+# ---------------------------------------------------------------------------
+# Pydantic models
+# ---------------------------------------------------------------------------
+
 class TranscriptionResponse(BaseModel):
     text: str
     language: str | None = None
@@ -61,6 +72,102 @@ class TranscriptionResponse(BaseModel):
 class BatchTranscriptionResponse(BaseModel):
     results: list[TranscriptionResponse]
 
+
+# ---------------------------------------------------------------------------
+# OpenAI-compatible chat completions endpoint (used by Pipecat pipeline)
+# ---------------------------------------------------------------------------
+
+@app.post("/v1/chat/completions")
+async def chat_completions(request: dict):
+    """OpenAI-compatible endpoint that accepts base64 audio in audio_url
+    and returns transcription in the chat completions response format.
+
+    Expected payload (from Pipecat qwen3_stt.py):
+    {
+        "model": "Qwen/Qwen3-ASR-1.7B",
+        "messages": [{
+            "role": "user",
+            "content": [{
+                "type": "audio_url",
+                "audio_url": {"url": "data:audio/wav;base64,<base64data>"}
+            }]
+        }]
+    }
+    """
+    if model is None:
+        raise HTTPException(503, "Model not loaded yet")
+
+    try:
+        messages = request.get("messages", [])
+        if not messages:
+            raise HTTPException(400, "No messages provided")
+
+        # Extract base64 audio from the last user message
+        last_msg = messages[-1]
+        content = last_msg.get("content", [])
+
+        audio_data = None
+        if isinstance(content, list):
+            for part in content:
+                if part.get("type") == "audio_url":
+                    url = part["audio_url"]["url"]
+                    # Parse data URI: data:audio/wav;base64,<data>
+                    if url.startswith("data:"):
+                        b64_data = url.split(",", 1)[1]
+                        audio_data = base64.b64decode(b64_data)
+                    break
+
+        if audio_data is None:
+            raise HTTPException(400, "No audio data found in request")
+
+        # Write to temp file for the model
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp:
+            tmp.write(audio_data)
+            tmp.flush()
+
+            results = model.transcribe(audio=tmp.name, language=None)
+
+        # Format as "<|language_code|>transcribed text" to match vLLM ASR output
+        lang = results[0].language or ""
+        text = results[0].text or ""
+
+        # Map language name to code
+        lang_map = {
+            "English": "en", "Chinese": "zh", "Japanese": "ja",
+            "Korean": "ko", "French": "fr", "German": "de",
+            "Spanish": "es", "Russian": "ru", "Portuguese": "pt",
+            "Italian": "it",
+        }
+        lang_code = lang_map.get(lang, lang.lower()[:2] if lang else "en")
+        response_content = f"<|{lang_code}|>{text}"
+
+        return {
+            "id": f"chatcmpl-{int(time.time())}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": request.get("model", MODEL_ID),
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": response_content,
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("chat/completions ASR error: %s", e, exc_info=True)
+        raise HTTPException(500, str(e))
+
+
+# ---------------------------------------------------------------------------
+# Standalone transcription endpoints (for direct usage / testing)
+# ---------------------------------------------------------------------------
 
 @app.get("/health")
 async def health():
