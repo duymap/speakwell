@@ -11,11 +11,16 @@ import asyncio
 import base64
 import io
 import logging
+import os
 import tempfile
 import time
 import wave
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+# Force Triton attention backend for Blackwell GPU compatibility
+# (vllm_flash_attn PTX not compiled for sm_120, FlashInfer needs matching CUDA toolkit)
+os.environ.setdefault("VLLM_ATTENTION_BACKEND", "TRITON_ATTN")
 
 import torch
 import uvicorn
@@ -46,6 +51,7 @@ async def lifespan(app: FastAPI):
         max_new_tokens=32,
         max_model_len=4096,
         enforce_eager=True,
+        mm_encoder_attn_backend="TORCH_SDPA",
     )
     logger.info("STT model loaded.")
     yield
