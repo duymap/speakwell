@@ -103,14 +103,13 @@ def _generate_audio(text: str, language: str, instruct: str):
     results = engine.generate(inputs)
 
     # Extract audio from multimodal output
+    # results[0].request_output is a list of RequestOutput objects
+    # Each RequestOutput has a .multimodal_output dict with "audio" and "sr"
     stage_output = results[0]
-    req_output = stage_output.request_output
-    logger.info("request_output type=%s, value=%s", type(req_output).__name__, repr(req_output)[:500])
-    if isinstance(req_output, list):
-        logger.info("req_output[0] type=%s, attrs=%s", type(req_output[0]).__name__, dir(req_output[0]))
-    else:
-        logger.info("req_output attrs=%s", dir(req_output))
-    raise RuntimeError("DEBUG: check logs for request_output structure")
+    req_output = stage_output.request_output[0]
+    mm_output = req_output.multimodal_output
+    audio = mm_output["audio"]
+    sr = mm_output["sr"]
 
     # Convert to numpy if it's a torch tensor
     if isinstance(audio, torch.Tensor):
