@@ -1,59 +1,175 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
+/* ─── Dark theme (default) ─── */
 :root {
-  /* Light theme — modern SaaS style */
-  --color-bg: #f8f9fc;
-  --color-bg-secondary: #ffffff;
-  --color-bg-elevated: #ffffff;
-  --color-surface: rgba(0, 0, 0, 0.03);
-  --color-surface-hover: rgba(0, 0, 0, 0.06);
+  --color-bg: #080b14;
+  --color-bg-secondary: #0d1120;
+  --color-bg-panel: rgba(255, 255, 255, 0.04);
+  --color-bg-glass: rgba(255, 255, 255, 0.06);
+  --header-bg: rgba(8, 11, 20, 0.6);
+  --footer-bg: rgba(8, 11, 20, 0.5);
 
-  --color-text: #1a1a2e;
-  --color-text-secondary: #6b7280;
-  --color-text-muted: #9ca3af;
+  --color-text: #f0f2ff;
+  --color-text-secondary: #8892b0;
+  --color-text-muted: #4a5568;
 
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-border-subtle: rgba(0, 0, 0, 0.04);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.04);
+  --color-border-glow: rgba(110, 86, 207, 0.35);
 
-  /* Accent gradient — blue to purple */
-  --color-accent: #6366f1;
-  --color-accent-light: #818cf8;
-  --color-accent-dark: #4f46e5;
-  --gradient-accent: linear-gradient(135deg, #6366f1, #8b5cf6);
-  --gradient-accent-hover: linear-gradient(135deg, #4f46e5, #7c3aed);
+  /* Accent — violet → fuchsia */
+  --color-accent: #7c5cfc;
+  --color-accent-light: #9d7ffe;
+  --color-accent-dark: #5a3dd8;
+  --color-accent2: #e040fb;
+  --gradient-accent: linear-gradient(135deg, #7c5cfc 0%, #e040fb 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #6344e8 0%, #c929e0 100%);
 
-  /* Status colors */
-  --color-success: #22c55e;
-  --color-success-soft: rgba(34, 197, 94, 0.1);
-  --color-danger: #ef4444;
-  --color-danger-dark: #dc2626;
-  --color-danger-soft: rgba(239, 68, 68, 0.08);
-  --color-warning: #f59e0b;
+  /* Orbs */
+  --orb-primary: rgba(124, 92, 252, 0.18);
+  --orb-secondary: rgba(224, 64, 251, 0.12);
 
-  /* Message bubbles */
-  --color-user-msg: rgba(99, 102, 241, 0.1);
-  --color-user-msg-border: rgba(99, 102, 241, 0.18);
-  --color-bot-msg: #ffffff;
-  --color-bot-msg-border: rgba(0, 0, 0, 0.06);
+  /* Status */
+  --color-success: #00d97e;
+  --color-success-soft: rgba(0, 217, 126, 0.12);
+  --color-danger: #ff4757;
+  --color-danger-dark: #e03048;
+
+  /* Bubbles */
+  --color-user-bubble: rgba(124, 92, 252, 0.15);
+  --color-user-bubble-border: rgba(124, 92, 252, 0.3);
+  --color-bot-bubble: rgba(255, 255, 255, 0.055);
+  --color-bot-bubble-border: rgba(255, 255, 255, 0.09);
 
   /* Error */
-  --color-error: rgba(239, 68, 68, 0.06);
-  --color-error-border: rgba(239, 68, 68, 0.15);
-  --color-error-text: #dc2626;
+  --color-error-bg: rgba(255, 71, 87, 0.08);
+  --color-error-border: rgba(255, 71, 87, 0.2);
+  --color-error-text: #ff4757;
 
-  /* Effects */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
-  --blur-glass: blur(12px);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* Shadows & effects */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 32px rgba(124, 92, 252, 0.28);
+  --shadow-glow-sm: 0 0 16px rgba(124, 92, 252, 0.2);
+  --blur-glass: blur(20px);
+  --blur-heavy: blur(60px);
+
+  /* Theme toggle icon */
+  --theme-icon: "☀️";
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
+
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.25s ease;
+  --transition-slow: 0.4s ease;
 }
 
+/* ─── Light theme ─── */
+[data-theme="light"] {
+  --color-bg: #f5f4ff;
+  --color-bg-secondary: #ffffff;
+  --color-bg-panel: rgba(0, 0, 0, 0.02);
+  --color-bg-glass: rgba(255, 255, 255, 0.75);
+  --header-bg: rgba(245, 244, 255, 0.85);
+  --footer-bg: rgba(245, 244, 255, 0.8);
+
+  --color-text: #1a1040;
+  --color-text-secondary: #5a5280;
+  --color-text-muted: #9e97be;
+
+  --color-border: rgba(124, 92, 252, 0.12);
+  --color-border-subtle: rgba(124, 92, 252, 0.06);
+  --color-border-glow: rgba(124, 92, 252, 0.2);
+
+  /* Accent stays vivid */
+  --color-accent: #6c47f5;
+  --color-accent-light: #8b6bff;
+  --color-accent-dark: #4f2ed8;
+  --color-accent2: #d030ef;
+  --gradient-accent: linear-gradient(135deg, #6c47f5 0%, #d030ef 100%);
+  --gradient-accent-hover: linear-gradient(135deg, #5535e0 0%, #b820d6 100%);
+
+  /* Orbs — softer for light bg */
+  --orb-primary: rgba(108, 71, 245, 0.08);
+  --orb-secondary: rgba(208, 48, 239, 0.06);
+
+  /* Status */
+  --color-success: #00b468;
+  --color-success-soft: rgba(0, 180, 104, 0.1);
+  --color-danger: #e53e52;
+  --color-danger-dark: #c42d40;
+
+  /* Bubbles */
+  --color-user-bubble: rgba(108, 71, 245, 0.08);
+  --color-user-bubble-border: rgba(108, 71, 245, 0.2);
+  --color-bot-bubble: #ffffff;
+  --color-bot-bubble-border: rgba(124, 92, 252, 0.1);
+
+  /* Error */
+  --color-error-bg: rgba(229, 62, 82, 0.06);
+  --color-error-border: rgba(229, 62, 82, 0.18);
+  --color-error-text: #c42d40;
+
+  /* Shadows — lighter, coloured */
+  --shadow-sm: 0 1px 4px rgba(100, 70, 220, 0.08);
+  --shadow-md: 0 4px 20px rgba(100, 70, 220, 0.1);
+  --shadow-lg: 0 8px 40px rgba(100, 70, 220, 0.12);
+  --shadow-glow: 0 0 32px rgba(108, 71, 245, 0.2);
+  --shadow-glow-sm: 0 0 16px rgba(108, 71, 245, 0.15);
+
+  --theme-icon: "🌙";
+}
+
+/* ─── System preference fallback ─── */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --color-bg: #f5f4ff;
+    --color-bg-secondary: #ffffff;
+    --color-bg-panel: rgba(0, 0, 0, 0.02);
+    --color-bg-glass: rgba(255, 255, 255, 0.75);
+    --header-bg: rgba(245, 244, 255, 0.85);
+    --footer-bg: rgba(245, 244, 255, 0.8);
+    --color-text: #1a1040;
+    --color-text-secondary: #5a5280;
+    --color-text-muted: #9e97be;
+    --color-border: rgba(124, 92, 252, 0.12);
+    --color-border-subtle: rgba(124, 92, 252, 0.06);
+    --color-border-glow: rgba(124, 92, 252, 0.2);
+    --color-accent: #6c47f5;
+    --color-accent-light: #8b6bff;
+    --color-accent-dark: #4f2ed8;
+    --color-accent2: #d030ef;
+    --gradient-accent: linear-gradient(135deg, #6c47f5 0%, #d030ef 100%);
+    --gradient-accent-hover: linear-gradient(135deg, #5535e0 0%, #b820d6 100%);
+    --orb-primary: rgba(108, 71, 245, 0.08);
+    --orb-secondary: rgba(208, 48, 239, 0.06);
+    --color-success: #00b468;
+    --color-success-soft: rgba(0, 180, 104, 0.1);
+    --color-danger: #e53e52;
+    --color-danger-dark: #c42d40;
+    --color-user-bubble: rgba(108, 71, 245, 0.08);
+    --color-user-bubble-border: rgba(108, 71, 245, 0.2);
+    --color-bot-bubble: #ffffff;
+    --color-bot-bubble-border: rgba(124, 92, 252, 0.1);
+    --color-error-bg: rgba(229, 62, 82, 0.06);
+    --color-error-border: rgba(229, 62, 82, 0.18);
+    --color-error-text: #c42d40;
+    --shadow-sm: 0 1px 4px rgba(100, 70, 220, 0.08);
+    --shadow-md: 0 4px 20px rgba(100, 70, 220, 0.1);
+    --shadow-lg: 0 8px 40px rgba(100, 70, 220, 0.12);
+    --shadow-glow: 0 0 32px rgba(108, 71, 245, 0.2);
+    --shadow-glow-sm: 0 0 16px rgba(108, 71, 245, 0.15);
+    --theme-icon: "🌙";
+  }
+}
+
+/* ─── Reset ─── */
 *,
 *::before,
 *::after {
@@ -65,33 +181,27 @@
 html,
 body {
   height: 100%;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--color-bg);
   color: var(--color-text);
   line-height: 1.6;
+  transition: background 0.35s ease, color 0.35s ease;
 }
 
 #root {
   height: 100%;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 3px;
+  background: rgba(124, 92, 252, 0.25);
+  border-radius: 10px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(124, 92, 252, 0.45);
 }

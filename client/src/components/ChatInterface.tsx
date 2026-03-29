@@ -33,6 +33,30 @@ function formatTime(iso: string): string {
   }
 }
 
+const ERROR_META: Record<
+  Exclude<ErrorKind, null>,
+  { icon: string; title: string; body: string; action: string }
+> = {
+  mic_denied: {
+    icon: "🎤",
+    title: "Microphone Access Required",
+    body: "SpeakWell needs microphone access to have a conversation.",
+    action: "Try Again",
+  },
+  server_error: {
+    icon: "⚡",
+    title: "Connection Failed",
+    body: "Could not connect to the server. Please try again.",
+    action: "Retry",
+  },
+  connection_lost: {
+    icon: "🔌",
+    title: "Connection Lost",
+    body: "The conversation was interrupted. Your transcript is preserved above.",
+    action: "Reconnect",
+  },
+};
+
 export function ChatInterface() {
   const client = usePipecatClient();
   const transportState = usePipecatClientTransportState();
@@ -72,7 +96,9 @@ export function ChatInterface() {
     setErrorKind(null);
     try {
       await client.connect({
-        webrtcRequestParams: { endpoint: `${import.meta.env.VITE_API_BASE_URL}/api/offer` },
+        webrtcRequestParams: {
+          endpoint: `${import.meta.env.VITE_API_BASE_URL}/api/offer`,
+        },
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === "NotAllowedError") {
@@ -90,37 +116,39 @@ export function ChatInterface() {
   };
 
   const getButtonText = () => {
-    if (isConnecting) return "Connecting...";
-    if (transportState === "disconnecting") return "Disconnecting...";
-    if (isConnected) return "End Conversation";
+    if (isConnecting) return "Connecting…";
+    if (transportState === "disconnecting") return "Disconnecting…";
+    if (isConnected) return "End Session";
     return "Start Conversation";
   };
 
   return (
     <div className="chat-interface">
       <div className="transcript" ref={transcriptRef}>
-        {/* Connecting spinner */}
+        {/* Connecting */}
         {isConnecting && (
           <div className="connecting-state">
             <div className="spinner" />
-            <p>Setting up your conversation...</p>
+            <p>Setting up your conversation…</p>
           </div>
         )}
 
-        {/* Empty: not connected */}
+        {/* Idle empty state */}
         {!isConnected && !isConnecting && messages.length === 0 && !errorKind && (
           <div className="empty-state">
+            <div className="empty-state-icon">💬</div>
             <p>
-              Click &ldquo;Start Conversation&rdquo; to begin practicing
+              Click <strong>"Start Conversation"</strong> to begin practicing
               English with your AI tutor.
             </p>
           </div>
         )}
 
-        {/* Empty: connected but no messages yet */}
+        {/* Connected but no messages */}
         {isConnected && messages.length === 0 && (
           <div className="empty-state">
-            <p>Listening... Say hello!</p>
+            <div className="empty-state-icon">🎙</div>
+            <p>Listening… say hello to your tutor!</p>
           </div>
         )}
 
@@ -128,60 +156,48 @@ export function ChatInterface() {
         {messages.map((msg, index) => {
           const text = getMessageText(msg);
           if (!text) return null;
+          const isUser = msg.role === "user";
           return (
             <div key={index} className={`message message-${msg.role}`}>
-              <div className="message-header">
-                <span className="message-role">
-                  {msg.role === "user" ? "You" : "Tutor"}
-                </span>
-                {msg.createdAt && (
-                  <span className="message-time">
-                    {formatTime(msg.createdAt)}
-                  </span>
-                )}
+              <div className="message-avatar">
+                {isUser ? "Y" : "🤖"}
               </div>
-              <div className="message-text">{text}</div>
+              <div className="message-body">
+                <div className="message-meta">
+                  <span className="message-role">
+                    {isUser ? "You" : "Tutor"}
+                  </span>
+                  {msg.createdAt && (
+                    <span className="message-time">
+                      {formatTime(msg.createdAt)}
+                    </span>
+                  )}
+                </div>
+                <div className="message-bubble">{text}</div>
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Error states */}
-      {errorKind === "mic_denied" && (
-        <div className="error-banner">
-          <div className="error-title">Microphone Access Required</div>
-          <p>SpeakWell needs microphone access to have a conversation.</p>
-          <div className="error-actions">
-            <button className="btn-secondary" onClick={handleConnect}>
-              Try Again
-            </button>
+      {/* Error banners */}
+      {errorKind && (() => {
+        const meta = ERROR_META[errorKind];
+        return (
+          <div className="error-banner">
+            <div className="error-header">
+              <span className="error-icon">{meta.icon}</span>
+              <span className="error-title">{meta.title}</span>
+            </div>
+            <p>{meta.body}</p>
+            <div className="error-actions">
+              <button className="btn-secondary" onClick={handleConnect}>
+                {meta.action}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-
-      {errorKind === "server_error" && (
-        <div className="error-banner">
-          <div className="error-title">Connection Failed</div>
-          <p>Could not connect to the server. Please try again.</p>
-          <div className="error-actions">
-            <button className="btn-secondary" onClick={handleConnect}>
-              Retry
-            </button>
-          </div>
-        </div>
-      )}
-
-      {errorKind === "connection_lost" && (
-        <div className="error-banner">
-          <div className="error-title">Connection Lost</div>
-          <p>The conversation was interrupted. Your transcript is preserved above.</p>
-          <div className="error-actions">
-            <button className="btn-secondary" onClick={handleConnect}>
-              Reconnect
-            </button>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Controls */}
       <div className="controls">

@@ -47,12 +47,14 @@ export function AudioIndicator({ audioState: overrideState }: AudioIndicatorProp
           ? "botSpeaking"
           : "listening");
 
-  const labels: Record<AudioState, string> = {
-    idle: "",
-    listening: "Listening...",
-    userSpeaking: "You're speaking...",
-    botSpeaking: "Tutor is speaking...",
+  const labels: Record<AudioState, { label: string; hint: string }> = {
+    idle: { label: "", hint: "" },
+    listening: { label: "Listening", hint: "Start speaking anytime" },
+    userSpeaking: { label: "You're speaking", hint: "Speak clearly for best results" },
+    botSpeaking: { label: "Tutor is speaking", hint: "Wait for your turn" },
   };
+
+  const info = labels[audioState];
 
   return (
     <div className={`audio-indicator audio-indicator-${audioState}`}>
@@ -60,11 +62,7 @@ export function AudioIndicator({ audioState: overrideState }: AudioIndicatorProp
         {audioState === "botSpeaking" ? (
           <div className="bars">
             {[0, 1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="bar"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              />
+              <div key={i} className="bar" />
             ))}
           </div>
         ) : (
@@ -78,8 +76,12 @@ export function AudioIndicator({ audioState: overrideState }: AudioIndicatorProp
           </div>
         )}
       </div>
-      {labels[audioState] && (
-        <p className="indicator-label">{labels[audioState]}</p>
+
+      {info.label && (
+        <div className="indicator-info">
+          <span className="indicator-label">{info.label}</span>
+          {info.hint && <span className="indicator-hint">{info.hint}</span>}
+        </div>
       )}
     </div>
   );
