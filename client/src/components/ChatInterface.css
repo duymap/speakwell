@@ -281,7 +281,6 @@
   background: var(--gradient-accent);
   color: white;
   transition: all var(--transition-base);
-  box-shadow: var(--shadow-glow), 0 4px 20px rgba(0,0,0,0.4);
   letter-spacing: -0.01em;
   overflow: hidden;
 }
@@ -307,7 +306,6 @@
 
 .connect-btn:hover:not(:disabled) {
   background: var(--gradient-accent-hover);
-  box-shadow: 0 0 48px rgba(124, 92, 252, 0.45), 0 4px 24px rgba(0,0,0,0.5);
   transform: translateY(-2px) scale(1.02);
 }
 
@@ -322,12 +320,10 @@
 
 .connect-btn.connected {
   background: linear-gradient(135deg, #ff4757, #e03048);
-  box-shadow: 0 0 24px rgba(255, 71, 87, 0.25), 0 4px 20px rgba(0,0,0,0.4);
 }
 
 .connect-btn.connected:hover:not(:disabled) {
   background: linear-gradient(135deg, #e03048, #c0213a);
-  box-shadow: 0 0 40px rgba(255, 71, 87, 0.4), 0 4px 24px rgba(0,0,0,0.5);
 }
 
 .connect-btn:disabled {

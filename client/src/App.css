@@ -183,12 +183,12 @@
 
 /* ─── Footer ─── */
 .app-footer {
-  padding: 0.5rem 1.5rem 1rem;
+  padding: 0.5rem 1.5rem 1.5rem;
   flex-shrink: 0;
-  backdrop-filter: var(--blur-glass);
-  background: var(--footer-bg);
-  border-top: 1px solid var(--color-border-subtle);
-  transition: background 0.35s ease, border-color 0.35s ease;
+  background: transparent;
+  border-top: none;
+  display: flex;
+  justify-content: center;
 }
 
 @keyframes iconFloat {
