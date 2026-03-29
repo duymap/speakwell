@@ -1,6 +1,6 @@
 # SpeakWell
 
-![SpeakWell Frontend](screenshot.png)
+![SpeakWell Frontend](screenshot-1.png)
 
 A real-time voice AI web app for practicing English conversation with an AI tutor. Users speak naturally with the AI, which listens, responds via voice, and displays a live transcript on screen.
 
